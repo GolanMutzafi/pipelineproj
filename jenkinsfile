@@ -1,25 +1,21 @@
 pipeline {
-    agent any  // הגדרת סוכן כללי לפייפליין (יכול להיות כל סוכן במערכת)
-
+    agent any  
     environment {
-        DOCKER_REGISTRY = 'docker.io' // כתובת הרגיסטרי של דוקר
-        IMAGE_NAME = 'golanm/hw' // שם התמונה שלך
-        DOCKER_CREDENTIALS = 'docker-credentials' // מזהה ה-credentials שהגדרת ב-Jenkins
+        DOCKER_REGISTRY = 'docker.io' 
+        IMAGE_NAME = 'golanm/hw' 
+        DOCKER_CREDENTIALS = 'docker-credentials' 
     }
 
     stages {
         stage('Checkout Git Repo') {
             steps {
-                // שלב זה מבצע checkout של הקוד מהגיטהאב או ריפוזיטורי אחר
-                git 'https://github.com/GolanMutzafi/pipelineproj.git' // כתובת הריפוזיטורי שלך
+                git 'https://github.com/GolanMutzafi/pipelineproj.git' 
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    // שלב זה בונה את התמונה מתוך הקוד שלך
-                    // השם יהיה כפי שהגדרת ב-IMAGE_NAME
                     sh 'docker build -t $IMAGE_NAME:latest .'
                 }
             }
@@ -28,9 +24,7 @@ pipeline {
         stage('Login to Docker Registry') {
             steps {
                 script {
-                    // שימוש ב-credentials שהגדרת ב-Jenkins (docker-credentials)
                     withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        // התחברות לדוקר עם שם המשתמש והסיסמה
                         sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD $DOCKER_REGISTRY'
                     }
                 }
@@ -39,14 +33,12 @@ pipeline {
 
         stage('Push Docker Image to Registry') {
             steps {
-                // שלב זה דוחף את התמונה שנבנתה ל-registry
                 sh 'docker push $IMAGE_NAME:latest'
             }
         }
 
         stage('SSH to Linux Machine') {
             steps {
-                // התחברות למכונה הוירטואלית שלך באמצעות SSH
                 sshagent(['ssh-credentials']) {
                     sh 'ssh -o StrictHostKeyChecking=no user@linux-server-ip "docker pull $IMAGE_NAME:latest"'
                 }
@@ -56,7 +48,6 @@ pipeline {
         stage('Run Docker Container on Linux Machine') {
             steps {
                 script {
-                    // הרצת הקונטיינר על המכונה הוירטואלית
                     sh 'ssh -o StrictHostKeyChecking=no user@linux-server-ip "docker run -d -p 5000:5000 $IMAGE_NAME:latest"'
                 }
             }
@@ -65,7 +56,6 @@ pipeline {
         stage('Test Application on Linux Machine') {
             steps {
                 script {
-                    // לבדוק אם השרות עובד בצורה תקינה
                     sh 'ssh -o StrictHostKeyChecking=no user@linux-server-ip "curl http://localhost:5000"'
                 }
             }
