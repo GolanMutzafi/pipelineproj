@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Checkout Git Repo') {
             steps {
-                git 'https://github.com/GolanMutzafi/pipelineproj.git' 
+                git branch: 'main', url: 'https://github.com/GolanMutzafi/pipelineproj.git' 
             }
         }
 
