@@ -7,6 +7,13 @@ pipeline {
     }
 
     stages {
+        stage('Debug Git Status') {
+            steps {
+                script {
+                    sh 'git status'
+                }
+            }
+        }
         stage('Checkout Git Repo') {
             steps {
                 git branch: 'main', url: 'https://github.com/GolanMutzafi/pipelineproj.git' 
