@@ -5,6 +5,7 @@ pipeline {
         DOCKER_TOKEN = credentials('docker-token')
         REGISTRY = 'docker.io'
         IMAGE_NAME = 'golanm/hw'
+        SSH_KEY = credentials('my-ssh-key') 
     }
 
     stages {
@@ -42,10 +43,10 @@ pipeline {
 
         stage('Run Docker Container on Linux Machine') {
             steps {
-                sshagent(['your-ssh-credentials-id']) {
+                sshagent(['my-ssh-key']) { 
                     script {
                         sh """
-                        ssh -o StrictHostKeyChecking=no user@remote-linux-server \
+                        ssh -o StrictHostKeyChecking=no vboxuser@192.168.134.128 \
                         'docker run -d ${IMAGE_NAME}:latest'
                         """
                     }
@@ -55,10 +56,10 @@ pipeline {
 
         stage('Test Application on Linux Machine') {
             steps {
-                sshagent(['your-ssh-credentials-id']) {
+                sshagent(['my-ssh-key']) {  
                     script {
                         sh """
-                        ssh -o StrictHostKeyChecking=no user@remote-linux-server \
+                        ssh -o StrictHostKeyChecking=no vboxuser@192.168.134.128 \
                         'docker exec -it <container-id> bash -c "run tests here"'
                         """
                     }
