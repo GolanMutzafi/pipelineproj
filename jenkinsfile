@@ -3,7 +3,7 @@ pipeline {
     environment {
         DOCKER_REGISTRY = 'docker.io' 
         IMAGE_NAME = 'golanm/hw' 
-        DOCKER_CREDENTIALS = 'docker-credentials' 
+        DOCKER_CREDENTIALS = 'docker-credentials'
     }
 
     stages {
@@ -14,6 +14,7 @@ pipeline {
                 }
             }
         }
+
         stage('Checkout Git Repo') {
             steps {
                 git branch: 'main', url: 'https://github.com/GolanMutzafi/pipelineproj.git' 
@@ -34,8 +35,8 @@ pipeline {
         stage('Login to Docker Registry') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD $DOCKER_REGISTRY'
+                    withCredentials([string(credentialsId: DOCKER_CREDENTIALS, variable: 'DOCKER_TOKEN')]) {
+                        sh 'echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin $DOCKER_REGISTRY'
                     }
                 }
             }
