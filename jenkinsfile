@@ -1,33 +1,23 @@
 pipeline {
-    agent any  
+    agent any
+
     environment {
-        DOCKER_REGISTRY = 'docker.io' 
-        IMAGE_NAME = 'golanm/hw' 
-        DOCKER_CREDENTIALS = 'docker-credentials'
+        DOCKER_TOKEN = credentials('docker-token')
+        REGISTRY = 'docker.io'
+        IMAGE_NAME = 'golanm/hw'
     }
 
     stages {
-        stage('Debug Git Status') {
-            steps {
-                script {
-                    sh 'git status'
-                }
-            }
-        }
-
         stage('Checkout Git Repo') {
             steps {
-                git branch: 'main', url: 'https://github.com/GolanMutzafi/pipelineproj.git' 
+                git url: 'https://github.com/GolanMutzafi/pipelineproj.git', branch: 'main'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh '''
-                    docker info || exit 1
-                    docker build -t $IMAGE_NAME:latest .
-                    '''
+                    docker.build("${IMAGE_NAME}:latest")
                 }
             }
         }
@@ -35,8 +25,8 @@ pipeline {
         stage('Login to Docker Registry') {
             steps {
                 script {
-                    withCredentials([string(credentialsId: DOCKER_CREDENTIALS, variable: 'DOCKER_TOKEN')]) {
-                        sh 'echo $DOCKER_TOKEN | docker login -u $DOCKER_USERNAME --password-stdin $DOCKER_REGISTRY'
+                    withCredentials([usernamePassword(credentialsId: 'docker-token', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USER} --password-stdin ${REGISTRY}"
                     }
                 }
             }
@@ -45,31 +35,33 @@ pipeline {
         stage('Push Docker Image to Registry') {
             steps {
                 script {
-                    sh 'docker push $IMAGE_NAME:latest'
-                }
-            }
-        }
-
-        stage('SSH to Linux Machine') {
-            steps {
-                sshagent(['ssh-credentials']) {
-                    sh 'ssh -o StrictHostKeyChecking=no vboxuser@192.168.134.128 "docker pull $IMAGE_NAME:latest"'
+                    docker.push("${IMAGE_NAME}:latest")
                 }
             }
         }
 
         stage('Run Docker Container on Linux Machine') {
             steps {
-                script {
-                    sh 'ssh -o StrictHostKeyChecking=no vboxuser@192.168.134.128 "docker run -d -p 5000:5000 $IMAGE_NAME:latest"'
+                sshagent(['your-ssh-credentials-id']) {
+                    script {
+                        sh """
+                        ssh -o StrictHostKeyChecking=no user@remote-linux-server \
+                        'docker run -d ${IMAGE_NAME}:latest'
+                        """
+                    }
                 }
             }
         }
 
         stage('Test Application on Linux Machine') {
             steps {
-                script {
-                    sh 'ssh -o StrictHostKeyChecking=no vboxuser@192.168.134.128 "curl http://localhost:5000"'
+                sshagent(['your-ssh-credentials-id']) {
+                    script {
+                        sh """
+                        ssh -o StrictHostKeyChecking=no user@remote-linux-server \
+                        'docker exec -it <container-id> bash -c "run tests here"'
+                        """
+                    }
                 }
             }
         }
